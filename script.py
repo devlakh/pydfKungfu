@@ -1,36 +1,47 @@
 import io
+import os
 from PyPDF2 import PdfFileWriter, PdfFileReader
 from reportlab.pdfgen import canvas
 from helpers import getData, createNewTemplate
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 
+#Get Data from text file and get the length
 dataList = getData("data.txt");
 dataLen = len(dataList);
+
+# Create a new PDF in Memory
 newTemplateStream = createNewTemplate("template.pdf", dataLen);
 
-# read your existing PDF
-template = PdfFileReader(newTemplateStream)
-pageSize1 = template.pages[0].mediabox[2]
-pageSize2 = template.pages[0].mediabox[3]
+# Read The PDF in Memory
+templateStream = PdfFileReader(newTemplateStream)
+
+# Get The Template Size
+pageSize1 = templateStream.pages[0].mediabox[2]
+pageSize2 = templateStream.pages[0].mediabox[3]
 
 #Generate PDF Stream
 filestream = io.BytesIO()
 c = canvas.Canvas(filestream, pagesize=(pageSize1,pageSize2))
 
+#register Custom Font
+pdfmetrics.registerFont(TTFont('dgarden', 'fonts/DarkGardenMK.ttf'));
+
+# Attach Data To Canvas
 for data in dataList:
-    c.drawCentredString(420, 297, data)
+    c.setFont('dgarden', 32);
+    c.drawCentredString(420, 405, data)
     c.showPage();
 c.save();
 
 # PDF FILE FROM SYSTEM
 pdfFile = PdfFileWriter()
-
 # PDF FILE IN MEMORY
 pdfStream = PdfFileReader(filestream)
 
-# add the "watermark" (which is the new pdf) on the existing page
-
+# Add The Pages
 for i in range(dataLen):
-    page = template.getPage(i)
+    page = templateStream.getPage(i)
     pdfFile.addPage(page)
     page.mergePage(pdfStream.getPage(i))
 
@@ -38,5 +49,3 @@ for i in range(dataLen):
 outputStream = open("output.pdf", "wb")
 pdfFile.write(outputStream)
 outputStream.close()
-
-print("PDF DONE");
